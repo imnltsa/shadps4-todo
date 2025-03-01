@@ -65,7 +65,7 @@ foreach ($all_issues as $issue) {
         // Determine the issue status based on labels
         $labels = array_column($issue["labels"], "name");
         $status = "Unknown"; // Default status
-        $os = "Unknown"; // Default OS
+        $os = "unknown"; // Default OS
 
         foreach ($status_labels as $label) {
             if (in_array($label, $labels)) {
@@ -92,8 +92,8 @@ foreach ($all_issues as $issue) {
             "issue" => $issue["html_url"],
             "game_name" => $game_name,
             "status" => strtolower($status), // Store status in lowercase
-            "os" => strtolower($os), // Store OS in lowercase
-	    "cusa" => $cusa_id
+            "os" => $os, // Store OS in lowercase
+	        "cusa" => $cusa_id
         ];
     }
 }
@@ -125,13 +125,13 @@ foreach ($cusa_issues as $cusa_id => $issues) {
     }
 
     // Add to the appropriate OS-specific lists
-    if ($has_windows && !$has_linux && !$has_macos) {
+    if (!$has_windows && ($has_linux || $has_macos)) {
         $todo_windows[] = $issues;
     }
-    if (!$has_windows && $has_linux && !$has_macos) {
+    if (!$has_linux && ($has_macos || $has_windows)) {
         $todo_linux[] = $issues;
     }
-    if (!$has_windows && !$has_linux && $has_macos) {
+    if (!$has_macos && ($has_linux || $has_windows)) {
         $todo_macos[] = $issues;
     }
 }

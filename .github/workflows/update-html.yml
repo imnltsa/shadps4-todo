@@ -23,7 +23,7 @@ jobs:
           php-version: "8.1"
 
       - name: Run script to generate HTML files
-        run: php script.php  # Adjust to your actual script name
+        run: php issue.php  # Adjust to your actual script name
 
       - name: Commit and push changes
         run: |

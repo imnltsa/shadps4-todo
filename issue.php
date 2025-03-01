@@ -56,7 +56,7 @@ foreach ($all_issues as $issue) {
         $cusa_id = $matches[0];
 
         $title_parts = explode(" - ", $issue["title"]);
-        $game_name = $title_parts[1] ?? "Unknown";
+        $game = $title_parts[1] ?? "Unknown";
 
         $labels = array_column($issue["labels"], "name");
         $statuses = [];
@@ -76,7 +76,7 @@ foreach ($all_issues as $issue) {
 
         if (!isset($cusa_issues[$cusa_id])) {
             $cusa_issues[$cusa_id] = [
-                "game_name" => $game_name,
+                "game" => $game,
                 "issues" => [],
                 "os_present" => [],
                 "cusa" => $cusa_id
@@ -115,7 +115,7 @@ foreach ($cusa_issues as $cusa_id => $data) {
 
 // Step 3: Sort games alphabetically by title
 function sortByGameName($a, $b) {
-    return strcasecmp($a["game_name"], $b["game_name"]);
+    return strcasecmp($a["game"], $b["game"]);
 }
 
 usort($todo_windows, "sortByGameName");
@@ -124,18 +124,18 @@ usort($todo_macos, "sortByGameName");
 
 // Step 4: Generate HTML files
 function genOsList($os, $data) {
-    $html = "<html><head><title>Missing shadPS4 Compatibility Reports | $os</title>
-    <link href=\"style.css\" rel=\"stylesheet\" /></head><body><h1>Missing compatibility reports for $os</h1><p>Here's a list of games that don't yet have an issue for $os.<br>Clicking a game will bring you to a report for the OS that DOES have a report, but not one for $os.<br>This does not include every game; if you have a game that is not in any [compatibility issue](https://github.com/shadps4-emu/shadps4-game-compatibility/issues), please create a new blank issue.<br><br><a href=\"https://github.com/shadps4-emu/shadps4-game-compatibility/issues/new?template=game_compatibility.yml\">Create blank issue</a><br><br><a href=\"./\">Test for another OS</a></p><br><hr><ul>";
+    $html = "<html lang=\"en\"><head><title>Missing shadPS4 Compatibility Reports for $os</title>
+    <link href=\"style.css\" rel=\"stylesheet\" /></head><body><h1>Missing <a target=\"_blank\" href=\"https://github.com/shadps4-emu/shadps4\">shadPS4</a> Compatibility Reports for $os</h1><p>Here's a list of games that don't yet have an issue for $os.<br><br>This list does not include <a href=\"https://serialstation.com\">every game</a>; if you have a game that is not in any <a target=\"_blank\" href=\"https://github.com/shadps4-emu/shadps4-game-compatibility/issues\">compatibility issues</a>, please <a target=\"_blank\" href=\"https://github.com/shadps4-emu/shadps4-game-compatibility/issues/new?template=game_compatibility.yml\">create a new blank issue</a>.<br><br><a href=\"./\">Test for another OS</a></p><br><hr><ul>";
         foreach ($data as $cusa_id => $info) {
-            $game_name = $info["game_name"];
+            $game = $info["game"];
             $cusa = $info["cusa"];
-            $html .= "<li><span><a href='https://github.com/shadps4-emu/shadps4-game-compatibility/issues/new?template=game_compatibility.yml&title={$cusa}%20-%20{$game_name}&game-name={$game_name}&game-code={$cusa}'>I have this game</a> | {$cusa} - {$game_name}";
+            $html .= "<li><span><a target=\"_blank\" href=\"https://github.com/shadps4-emu/shadps4-game-compatibility/issues?q=$cusa\">Search</a> | <a target=\"_blank\" href=\"https://github.com/shadps4-emu/shadps4-game-compatibility/issues/new?template=game_compatibility.yml&title={$cusa}%20-%20{$game}&game-name={$game}&game-code={$cusa}\"><b><i>I have this game</i></b></a> | {$cusa} &#x2022; {$game}";
             $html .= " (";
             $c = 0;
             foreach ($info["issues"] as $issue) {
                 if ($c > 0) $html .= ", ";
                 $c++;
-                $html .= "<a href='{$issue['url']}'>status-{$issue['status']} on os-{$issue['os']}</a>";
+                $html .= "<a target=\"_blank\" href=\"{$issue["url"]}\">status-{$issue["status"]} on os-{$issue["os"]}</a>";
             }
             $html .= ")</span></li>";
         }
@@ -144,27 +144,28 @@ function genOsList($os, $data) {
     return $html;
 }
 
-file_put_contents("todo_linux.html", genOsList("Linux", $todo_linux));
-file_put_contents("todo_windows.html", genOsList("Windows", $todo_windows));
-file_put_contents("todo_macos.html", genOsList("macOS", $todo_macos));
+file_put_contents("linux.html", genOsList("Linux", $todo_linux));
+file_put_contents("windows.html", genOsList("Windows", $todo_windows));
+file_put_contents("macos.html", genOsList("macOS", $todo_macos));
 
 $index_html = <<<HTML
-<html>
+<html lang="en">
 <head>
     <title>Missing shadPS4 Compatibility Reports</title>
     <link href="style.css" rel="stylesheet" />
 </head>
 <body>
-    <h1>Missing <a href="https://github.com/shadps4-emu/shadps4">shadPS4</a> Compatibility Reports</h1>
+    <h1>Missing <a target="_blank" href="https://github.com/shadps4-emu/shadps4">shadPS4</a> Compatibility Reports</h1>
     <p>Click the operating system on which you would like to make an issue for.<br>If you have one of the games listed, you can be the first to create an issue for it.</p><br><hr>
     <ul>
-        <li><a href="todo_linux.html">Missing issues for Linux</a></li>
-        <li><a href="todo_windows.html">Missing issues for Windows</a></li>
-        <li><a href="todo_macos.html">Missing issues for macOS</a></li>
+        <li><a href="linux.html">Missing issues for Linux</a></li>
+        <li><a href="windows.html">Missing issues for Windows</a></li>
+        <li><a href="macos.html">Missing issues for macOS</a></li>
     </ul>
-    <hr><p><br>This list is updated daily via GitHub Actions.<br>Note: This does not show incorrectly named/tagged games.<br>Note: This does not include games that do not have any existing issues.<br><br><br></p>
+    <hr><p><br>This list is updated daily via <a target="_blank" href="https://github.com/imnltsa/shadps4-todo/actions">GitHub Actions</a>.<br><br>Note: This does not show incorrectly named/tagged games.<br>Note: This does not include games that do not have any existing issues.<br><br><br></p>
 </body>
 </html>
 HTML;
 
 file_put_contents("index.html", $index_html);
+echo "Done.";

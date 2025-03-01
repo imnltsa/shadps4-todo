@@ -12,8 +12,7 @@ p {
 }
 
 ul {
-    list-style-type: none;
-    padding: 0;
+    list-style-type: none; padding: 0;
 }
 
 li {
@@ -24,13 +23,20 @@ a {
     text-decoration: none;
 }
 
+.grey {
+    color: grey;
+}
+
+li.grey a {
+    color: grey !important;
+}
+
 @media (prefers-color-scheme: dark) {
     body {
-        background-color: #121212;
-        color: white;
+        background-color: #121212; color: white;
     }
 
-    a {
+    a:not(li.grey a) {
         color: #007bff;
     }
 }

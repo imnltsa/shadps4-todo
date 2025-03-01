@@ -12,7 +12,8 @@ p {
 }
 
 ul {
-    list-style-type: none; padding: 0;
+    list-style-type: none;
+    padding: 0;
 }
 
 li {
@@ -25,10 +26,11 @@ a {
 
 @media (prefers-color-scheme: dark) {
     body {
-        background-color: #121212; color: white;
+        background-color: #121212;
+        color: white;
     }
 
     a {
-        color: #bb86fc;
+        color: #007bff;
     }
 }

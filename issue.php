@@ -91,7 +91,34 @@ $todo_linux = array_filter($cusa_issues, fn($d) => ($d["windows"] || $d["macOS"]
 $todo_macos = array_filter($cusa_issues, fn($d) => ($d["windows"] || $d["linux"]) && !$d["macOS"]);
 
 function generateHtml($title, $data) {
-    $html = "<html><head><title>$title</title></head><body><p>Here's a list of games that don't yet have an issue for the OS you selected. Clicking a game will bring you to a report for the OS that DOES have a report, but not one for the OS you selected.</p><hr><h2>$title</h2><ul>";
+    $html = "<html><head><title>$title</title>    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: white;
+            color: black;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            body {
+                background-color: #121212;
+                color: white;
+            }
+            a {
+                color: #bb86fc;
+            }
+        }
+
+        h2 {
+            text-align: center;
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        li {
+            padding: 8px;
+        }
+    </style></head><body><h2>$title</h2><p>Here's a list of games that don't yet have an issue for the OS you selected. Clicking a game will bring you to a report for the OS that DOES have a report, but not one for the OS you selected.</p><hr><ul>";
     foreach ($data as $issue) {
         $html .= "<li><a href='{$issue['issue']}'>{$issue['cusa_id']} - {$issue['game_name']}</a></li>";
     }
@@ -99,13 +126,9 @@ function generateHtml($title, $data) {
     return $html;
 }
 
-file_put_contents("todo_linux.html", generateHtml("To-Do Linux", $todo_linux));
-file_put_contents("todo_windows.html", generateHtml("To-Do Windows", $todo_windows));
-file_put_contents("todo_macos.html", generateHtml("To-Do macOS", $todo_macos));
-
-echo "Saved Windows/macOS without Linux issues to todo_linux.html\n";
-echo "Saved macOS/Linux without Windows issues to todo_windows.html\n";
-echo "Saved Windows/Linux without macOS issues to todo_macos.html\n";
+file_put_contents("todo_linux.html", generateHtml("Missing issues for Linux", $todo_linux));
+file_put_contents("todo_windows.html", generateHtml("Missing issues for Windows", $todo_windows));
+file_put_contents("todo_macos.html", generateHtml("Missing issues for macOS", $todo_macos));
 
 // Generate index.html linking to all three files
 $index_html = <<<HTML
@@ -114,8 +137,8 @@ $index_html = <<<HTML
     <title>Missing shadPS4 Compatibility Reports</title>
 </head>
 <body>
-    <h2>Missing <a href="">shadPS4</a> Compatibility Reports</h2>
-    <p>Click the operating system on which you would like to test. If you have one of the games listed, you can be the first to create an issue for it.</p><hr>
+    <h2>Missing <a href="https://github.com/shadps4-emu/shadps4">shadPS4</a> Compatibility Reports</h2>
+    <p>Click the operating system on which you would like to make an issue for. If you have one of the games listed, you can be the first to create an issue for it.</p><hr>
     <ul>
         <li><a href="todo_linux.html">Missing issues for Linux</a></li>
         <li><a href="todo_windows.html">Missing issues for Windows</a></li>

@@ -1,190 +1,168 @@
 <?php
 
-$repo = "shadps4-emu/shadps4-game-compatibility";
-$base_url = "https://api.github.com/repos/$repo/issues?per_page=100&page=";
-$headers = [
-    "User-Agent: PHP-Script",
-    "Accept: application/vnd.github.v3+json"
-];
+$options = getopt("c");
 
-echo "Fetching issues from GitHub...\n";
-$all_issues = [];
-$page = 1;
+if (isset($options["c"]) && file_exists("issues.json")) {
+    echo "Using cached issues.json...\n";
+    $all_issues = json_decode(file_get_contents("issues.json"), true);
+} else {
+    echo "Fetching issues from GitHub...\n";
+    $all_issues = [];
+    $page = 1;
 
-do {
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, $base_url . $page);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+    do {
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, "https://api.github.com/repos/shadps4-emu/shadps4-game-compatibility/issues?per_page=100&page=$page");
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ["User-Agent: PHP-Script", "Accept: application/vnd.github.v3+json"]);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
 
-    $response = curl_exec($ch);
-    if (curl_errno($ch)) {
-        die("cURL error: " . curl_error($ch) . "\n");
-    }
+        $response = curl_exec($ch);
+        if (curl_errno($ch)) {
+            die("cURL error: " . curl_error($ch) . "\n");
+        }
 
-    $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
+        $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
 
-    if ($http_code !== 200) {
-        die("Failed to fetch issues! HTTP code: $http_code\n");
-    }
+        if ($http_code !== 200) {
+            die("Failed to fetch issues! HTTP code: $http_code\n");
+        }
 
-    $issues = json_decode($response, true);
-    if (!is_array($issues)) {
-        die("JSON decoding error: " . json_last_error_msg() . "\nResponse:\n$response\n");
-    }
+        $issues = json_decode($response, true);
+        if (!is_array($issues)) {
+            die("JSON decoding error: " . json_last_error_msg() . "\nResponse:\n$response\n");
+        }
 
-    $all_issues = array_merge($all_issues, $issues);
-    $page++;
+        $all_issues = array_merge($all_issues, $issues);
+        $page++;
 
-    echo "Fetched page $page, total issues so far: " . count($all_issues) . "\n";
+        echo "Fetched page $page, total issues so far: " . count($all_issues) . "\n";
 
-} while (count($issues) === 100);
+    } while (count($issues) === 100);
 
-// --- Group issues by CUSA ID ---
+    file_put_contents("issues.json", json_encode($all_issues, JSON_PRETTY_PRINT));
+    echo "Fetched all issues, total: " . count($all_issues) . "\n";
+}
+
 $cusa_issues = [];
-$cusa_id_map = [];
-$unique_id = 1;
 $status_labels = ["status-playable", "status-ingame", "status-menus", "status-boots", "status-nothing"];
 $os_labels = ["os-windows", "os-linux", "os-macOS"];
 
+// Step 1: Collect issues per CUSA
 foreach ($all_issues as $issue) {
     if (preg_match('/CUSA\d{5}/', $issue["title"], $matches)) {
         $cusa_id = $matches[0];
 
-        if (!isset($cusa_id_map[$cusa_id])) {
-            $cusa_id_map[$cusa_id] = $unique_id++;
-        }
-        $unique_cusa_id = $cusa_id_map[$cusa_id];
-
         $title_parts = explode(" - ", $issue["title"]);
-        $game_name = $title_parts[1] ?? "Unknown Game";
+        $game_name = $title_parts[1] ?? "Unknown";
 
-        // Determine the issue status based on labels
         $labels = array_column($issue["labels"], "name");
-        $status = "Unknown"; // Default status
-        $os = "unknown"; // Default OS
+        $statuses = [];
+        $oses = [];
 
         foreach ($status_labels as $label) {
             if (in_array($label, $labels)) {
-                $status = ucfirst(str_replace("status-", "", $label)); // Format the status
-                break;
+                $statuses[] = str_replace("status-", "", $label);
             }
         }
 
-        // Check OS label (there will only be one per issue)
         foreach ($os_labels as $label) {
             if (in_array($label, $labels)) {
-                $os = ucfirst(str_replace("os-", "", $label)); // Store OS label
-                break;
+                $oses[] = str_replace("os-", "", $label);
             }
         }
 
-        // Initialize if not set
         if (!isset($cusa_issues[$cusa_id])) {
-            $cusa_issues[$cusa_id] = [];
+            $cusa_issues[$cusa_id] = [
+                "game_name" => $game_name,
+                "issues" => [],
+                "os_present" => [],
+                "cusa" => $cusa_id
+            ];
         }
 
-        // Add this issue to the list for the current CUSA ID (allow duplicates)
-        $cusa_issues[$cusa_id][] = [
-            "issue" => $issue["html_url"],
-            "game_name" => $game_name,
-            "status" => strtolower($status), // Store status in lowercase
-            "os" => $os, // Store OS in lowercase
-	        "cusa" => $cusa_id
+        $cusa_issues[$cusa_id]["issues"][] = [
+            "url" => $issue["html_url"],
+            "status" => implode(", ", $statuses),
+            "os" => implode(", ", $oses),
+            "cusa" => $cusa_id
         ];
+
+        $cusa_issues[$cusa_id]["os_present"] = array_merge($cusa_issues[$cusa_id]["os_present"], $oses);
     }
 }
 
-// Sorting by game name
-uasort($cusa_issues, fn($a, $b) => strcmp($a[0]["game_name"], $b[0]["game_name"]));
-
-
-// Initialize lists for each OS
+// Step 2: Filter out issues based on missing OS
 $todo_windows = [];
 $todo_linux = [];
 $todo_macos = [];
 
-// Keep track of CUSA IDs for each OS
-$cusa_added_windows = [];
-$cusa_added_linux = [];
-$cusa_added_macos = [];
+foreach ($cusa_issues as $cusa_id => $data) {
+    $os_present = array_unique($data["os_present"]);
 
-// Assume $issues is the array of all issues you want to process
-foreach ($issues as $issue) {
-    $has_windows = $issue['os'] == 'windows';
-    $has_linux = $issue['os'] == 'linux';
-    $has_macos = $issue['os'] == 'macOS';
-
-    // Check if the CUSA has already been added to any list
-    $cusa_id = $issue['cusa_id'];
-
-    if ($has_windows && !in_array($cusa_id, $cusa_added_windows)) {
-        // Add to Windows list and mark the CUSA as added for Windows
-        $todo_windows[] = $issue;
-        $cusa_added_windows[] = $cusa_id;
+    if (!in_array("windows", $os_present)) {
+        $todo_windows[$cusa_id] = $data;
     }
-
-    if ($has_linux && !in_array($cusa_id, $cusa_added_linux) && !in_array($cusa_id, $cusa_added_windows)) {
-        // Add to Linux list, but only if not already added to Windows
-        $todo_linux[] = $issue;
-        $cusa_added_linux[] = $cusa_id;
+    if (!in_array("linux", $os_present)) {
+        $todo_linux[$cusa_id] = $data;
     }
-
-    if ($has_macos && !in_array($cusa_id, $cusa_added_macos) && !in_array($cusa_id, $cusa_added_windows) && !in_array($cusa_id, $cusa_added_linux)) {
-        // Add to macOS list, but only if not already added to Windows or Linux
-        $todo_macos[] = $issue;
-        $cusa_added_macos[] = $cusa_id;
+    if (!in_array("macOS", $os_present)) {
+        $todo_macos[$cusa_id] = $data;
     }
 }
 
-// Function to generate the HTML
-function generateHtml($title, $data) {
-    $html = "<html><head><title>$title</title><style>
-        body { font-family: Arial, sans-serif; background-color: white; color: black; }
-        @media (prefers-color-scheme: dark) { body { background-color: #121212; color: white; } a { color: #bb86fc; } }
-        h2 { text-align: center; }
-        ul { list-style-type: none; padding: 0; }
-        li { padding: 8px; }
-    </style></head><body><h2>$title</h2><p>Here's a list of games that don't yet have an issue for the OS you selected.<br>Clicking a game will bring you to a report for the OS that DOES have a report, but not one for the OS you selected.<br><br><a href=\"https://github.com/shadps4-emu/shadps4-game-compatibility/issues/new?template=game_compatibility.yml\">Create blank issue</a><br><a href=\"./\">Test for another OS</a></p><hr><ul>";
-    
-    foreach ($data as $issues) {
-        foreach ($issues as $issue) {
-            $html .= "<li><a href='https://github.com/shadps4-emu/shadps4-game-compatibility/issues/new?template=game_compatibility.yml&title={$issue['cusa']}%20-%20{$issue['game_name']}&game-name={$issue['game_name']}&game-code={$issue['cusa']}'>I have this game</a> | <a href='{$issue['issue']}'>{$issue['cusa']} - {$issue['game_name']}</a> (status-{$issue['status']} on os-{$issue['os']})</li>";
+// Step 3: Sort games alphabetically by title
+function sortByGameName($a, $b) {
+    return strcasecmp($a["game_name"], $b["game_name"]);
+}
+
+usort($todo_windows, "sortByGameName");
+usort($todo_linux, "sortByGameName");
+usort($todo_macos, "sortByGameName");
+
+// Step 4: Generate HTML files
+function genOsList($os, $data) {
+    $html = "<html><head><title>Missing shadPS4 Compatibility Reports | $os</title>
+    <link href=\"style.css\" rel=\"stylesheet\" /></head><body><h1>Missing compatibility reports for $os</h1><p>Here's a list of games that don't yet have an issue for $os.<br>Clicking a game will bring you to a report for the OS that DOES have a report, but not one for $os.<br><br><a href=\"https://github.com/shadps4-emu/shadps4-game-compatibility/issues/new?template=game_compatibility.yml\">Create blank issue</a><br><br><a href=\"./\">Test for another OS</a></p><br><hr><ul>";
+        foreach ($data as $cusa_id => $info) {
+            $game_name = $info["game_name"];
+            $cusa = $info["cusa"];
+            $html .= "<li><span><a href='https://github.com/shadps4-emu/shadps4-game-compatibility/issues/new?template=game_compatibility.yml&title={$cusa}%20-%20{$game_name}&game-name={$game_name}&game-code={$cusa}'>I have this game</a> | {$cusa} - {$game_name}";
+            $html .= " (";
+            $c = 0;
+            foreach ($info["issues"] as $issue) {
+                if ($c > 0) $html .= ", ";
+                $c++;
+                $html .= "<a href='{$issue['url']}'>status-{$issue['status']} on os-{$issue['os']}</a>";
+            }
+            $html .= ")</span></li>";
         }
-    }
-    $html .= "</ul></body></html>";
+
+    $html .= "</ul><hr><br><p><a href=\"./\">Test for another OS</a><br><br><a href=\"https://github.com/imnltsa/shadps4-todo\">Give me a star</a>!!! I couldn't even cheat and use AI for everything.<br><br><br></p></body></html>";
     return $html;
 }
 
-file_put_contents("todo_linux.html", generateHtml("Missing issues for Linux", $todo_linux));
-file_put_contents("todo_windows.html", generateHtml("Missing issues for Windows", $todo_windows));
-file_put_contents("todo_macos.html", generateHtml("Missing issues for macOS", $todo_macos));
+file_put_contents("todo_linux.html", genOsList("Linux", $todo_linux));
+file_put_contents("todo_windows.html", genOsList("Windows", $todo_windows));
+file_put_contents("todo_macos.html", genOsList("macOS", $todo_macos));
 
-// Generate index.html linking to all three files
 $index_html = <<<HTML
 <html>
 <head>
     <title>Missing shadPS4 Compatibility Reports</title>
-    <style>
-        body { font-family: Arial, sans-serif; background-color: white; color: black; }
-        @media (prefers-color-scheme: dark) { body { background-color: #121212; color: white; } a { color: #bb86fc; } }
-        h2 { text-align: center; }
-        ul { list-style-type: none; padding: 0; }
-        li { padding: 8px; }
-    </style>
+    <link href="style.css" rel="stylesheet" />
 </head>
 <body>
-    <h2>Missing <a href="https://github.com/shadps4-emu/shadps4">shadPS4</a> Compatibility Reports</h2>
+    <h1>Missing <a href="https://github.com/shadps4-emu/shadps4">shadPS4</a> Compatibility Reports</h1>
     <p>Click the operating system on which you would like to make an issue for. If you have one of the games listed, you can be the first to create an issue for it.</p><hr>
     <ul>
         <li><a href="todo_linux.html">Missing issues for Linux</a></li>
         <li><a href="todo_windows.html">Missing issues for Windows</a></li>
         <li><a href="todo_macos.html">Missing issues for macOS</a></li>
     </ul>
-    <p>While this does not contain a list of games missing from shadPS4 compatibility list (yet), it contains a list of games that ARE available on the compatibility list but don't have issues for every OS.<br><br>This list is updated daily via GitHub Actions.</p>
+    <hr><p><br>This list is updated daily via GitHub Actions. Note: This does not show incorrectly named/tagged games.<br><br><a href="https://github.com/imnltsa/shadps4-todo">Give me a star</a>!!! I couldn't even cheat and use AI for everything.<br><br><br></p>
 </body>
 </html>
 HTML;

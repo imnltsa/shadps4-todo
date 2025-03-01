@@ -168,11 +168,14 @@ function genOsCompare($os, $data, $cusa_issues) {
         $c = 0;
         foreach ($cusa_issues as $check_id => $check_info) {
             if ($check_info["cusa"] === $cusa) {
+                $tmpc=0;
                 foreach ($check_info["issues"] as $issue) {
+                    $tmpc++;
                     if ($c > 0) $html .= ", ";
                     $c++;
                     $html .= "<a target=\"_blank\" href=\"{$issue["url"]}\">{$issue["os"]} {$issue["status"]}</a>";
                 }
+                if($tmpc===0){$thtml.="untagged";}
             }
         }
         $html .= ")</span></li>";
@@ -312,11 +315,14 @@ function genOsBacktrack($os, $data, $cusa_issues) {
         $c = 0;
         foreach ($cusa_issues as $check_id => $check_info) {
             if ($check_info["cusa"] === $cusa) {
+                $tmpc=0;
                 foreach ($check_info["issues"] as $issue) {
+                    $tmpc++;
                     if ($c > 0) $thtml .= ", ";
                     $c++;
                     $thtml .= "<a target=\"_blank\" href=\"{$issue["url"]}\">{$issue["os"]} {$issue["status"]}</a>";
                 }
+                if($tmpc===0){$thtml.="untagged";}
             }
         }
         $thtml .= ")</span></li>";

@@ -140,7 +140,7 @@ function genOsList($os, $data) {
             $html .= ")</span></li>";
         }
 
-    $html .= "</ul><hr><br><p><a href=\"./\">Test for another OS</a><br><br><a href=\"https://github.com/imnltsa/shadps4-todo\">Give me a star</a>!!! I couldn't even cheat and use AI for everything.<br><br><br></p></body></html>";
+    $html .= "</ul><hr><br><p><a href=\"./\">Test for another OS</a><br><br><br></p></body></html>";
     return $html;
 }
 
@@ -162,7 +162,7 @@ $index_html = <<<HTML
         <li><a href="todo_windows.html">Missing issues for Windows</a></li>
         <li><a href="todo_macos.html">Missing issues for macOS</a></li>
     </ul>
-    <hr><p><br>This list is updated daily via GitHub Actions. Note: This does not show incorrectly named/tagged games.<br><br><a href="https://github.com/imnltsa/shadps4-todo">Give me a star</a>!!! I couldn't even cheat and use AI for everything.<br><br><br></p>
+    <hr><p><br>This list is updated daily via GitHub Actions.<br>Note: This does not show incorrectly named/tagged games.<br><br><br></p>
 </body>
 </html>
 HTML;

@@ -47,6 +47,7 @@ do {
 $cusa_issues = [];
 $cusa_id_map = [];
 $unique_id = 1;
+$status_labels = ["status-playable", "status-ingame", "status-menus", "status-boots", "status-nothing"];
 
 foreach ($all_issues as $issue) {
     if (preg_match('/CUSA\d{5}/', $issue["title"], $matches)) {
@@ -60,14 +61,27 @@ foreach ($all_issues as $issue) {
         $title_parts = explode(" - ", $issue["title"]);
         $game_name = $title_parts[1] ?? "Unknown Game";
 
+                // Determine the issue status based on labels
+        $labels = array_column($issue["labels"], "name");
+        $status = "Unknown"; // Default status
+
+        foreach ($status_labels as $label) {
+            if (in_array($label, $labels)) {
+                $status = ucfirst(str_replace("status-", "", $label)); // Format the status
+                break;
+            }
+        }
+
+        // Initialize if not set
         if (!isset($cusa_issues[$unique_cusa_id])) {
             $cusa_issues[$unique_cusa_id] = [
                 "macOS" => false, "windows" => false, "linux" => false,
-                "issue" => null, "game_name" => $game_name, "cusa_id" => $cusa_id
+                "issue" => null, "game_name" => $game_name, "cusa_id" => $cusa_id,
+                "status" => $status // Store status
             ];
         }
 
-        $labels = array_column($issue["labels"], "name");
+    //    $labels = array_column($issue["labels"], "name");
 
         if (in_array("os-macos", $labels)) {
             $cusa_issues[$unique_cusa_id]["macOS"] = true;
@@ -120,15 +134,15 @@ function generateHtml($title, $data) {
         }
     </style></head><body><h2>$title</h2><p>Here's a list of games that don't yet have an issue for the OS you selected.<br>Clicking a game will bring you to a report for the OS that DOES have a report, but not one for the OS you selected.<br><br><a href=\"https://github.com/shadps4-emu/shadps4-game-compatibility/issues/new?template=game_compatibility.yml\">Create blank issue</a><br><a href=\"./\">Test for another OS</a></p><hr><ul>";
     foreach ($data as $issue) {
-        $html .= "<li><a href='https://github.com/shadps4-emu/shadps4-game-compatibility/issues/new?template=game_compatibility.yml&title={$issue['cusa_id']}%20-%20{$issue['game_name']}&game-name={$issue['game_name']}&game-code={$issue['cusa_id']}'>I have this game</a> | <a href='{$issue['issue']}'>{$issue['cusa_id']} - {$issue['game_name']}</a></li>";
+        $html .= "<li><a href='https://github.com/shadps4-emu/shadps4-game-compatibility/issues/new?template=game_compatibility.yml&title={$issue['cusa_id']}%20-%20{$issue['game_name']}&game-name={$issue['game_name']}&game-code={$issue['cusa_id']}'>I have this game</a> | <a href='{$issue['issue']}'>{$issue['cusa_id']} - {$issue['game_name']}</a> (probably currently status-<span class='status'>[{$issue['status']}]</span>)</li>";
     }
     $html .= "</ul></body></html>";
     return $html;
 }
 
-file_put_contents("todo_linux.html", generateHtml("Missing issues for Linux", $todo_linux));
-file_put_contents("todo_windows.html", generateHtml("Missing issues for Windows", $todo_windows));
-file_put_contents("todo_macos.html", generateHtml("Missing issues for macOS", $todo_macos));
+file_put_contents("todo_linux.html", generateHtml("Missing issues for Linux", $todo_linux, "linux"));
+file_put_contents("todo_windows.html", generateHtml("Missing issues for Windows", $todo_windows, "windows"));
+file_put_contents("todo_macos.html", generateHtml("Missing issues for macOS", $todo_macos, "macos"));
 
 // Generate index.html linking to all three files
 $index_html = <<<HTML

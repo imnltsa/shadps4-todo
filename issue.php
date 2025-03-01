@@ -101,38 +101,42 @@ foreach ($all_issues as $issue) {
 // Sorting by game name
 uasort($cusa_issues, fn($a, $b) => strcmp($a[0]["game_name"], $b[0]["game_name"]));
 
-// Prepare the issue categories
+
+// Initialize lists for each OS
 $todo_windows = [];
 $todo_linux = [];
 $todo_macos = [];
 
-foreach ($cusa_issues as $cusa_id => $issues) {
-    $has_windows = false;
-    $has_linux = false;
-    $has_macos = false;
+// Keep track of CUSA IDs for each OS
+$cusa_added_windows = [];
+$cusa_added_linux = [];
+$cusa_added_macos = [];
 
-    // Check if each OS is present for this CUSA ID
-    foreach ($issues as $issue) {
-        if ($issue["os"] === "windows") {
-            $has_windows = true;
-        }
-        if ($issue["os"] === "linux") {
-            $has_linux = true;
-        }
-        if ($issue["os"] === "macos") {
-            $has_macos = true;
-        }
+// Assume $issues is the array of all issues you want to process
+foreach ($issues as $issue) {
+    $has_windows = $issue['os'] == 'windows';
+    $has_linux = $issue['os'] == 'linux';
+    $has_macos = $issue['os'] == 'macOS';
+
+    // Check if the CUSA has already been added to any list
+    $cusa_id = $issue['cusa_id'];
+
+    if ($has_windows && !in_array($cusa_id, $cusa_added_windows)) {
+        // Add to Windows list and mark the CUSA as added for Windows
+        $todo_windows[] = $issue;
+        $cusa_added_windows[] = $cusa_id;
     }
 
-    // Add to the appropriate OS-specific lists
-    if (!$has_windows) {
-        $todo_windows[] = $issues;
+    if ($has_linux && !in_array($cusa_id, $cusa_added_linux) && !in_array($cusa_id, $cusa_added_windows)) {
+        // Add to Linux list, but only if not already added to Windows
+        $todo_linux[] = $issue;
+        $cusa_added_linux[] = $cusa_id;
     }
-    if (!$has_linux) {
-        $todo_linux[] = $issues;
-    }
-    if (!$has_macos) {
-        $todo_macos[] = $issues;
+
+    if ($has_macos && !in_array($cusa_id, $cusa_added_macos) && !in_array($cusa_id, $cusa_added_windows) && !in_array($cusa_id, $cusa_added_linux)) {
+        // Add to macOS list, but only if not already added to Windows or Linux
+        $todo_macos[] = $issue;
+        $cusa_added_macos[] = $cusa_id;
     }
 }
 

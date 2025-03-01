@@ -1,8 +1,8 @@
-name: Update GitHub Pages
+name: Get New Issues
 
 on:
   schedule:
-    - cron: "0 0 * * *" # Runs daily at midnight UTC
+    - cron: "0 0 * * *"
   push:
     branches:
       - main
@@ -15,21 +15,21 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Ensure we get all history for rebase
+          fetch-depth: 0
 
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: "8.1"
+          php-version: "8.3"
 
-      - name: Run script to generate HTML files
-        run: php issue.php  # Adjust to your actual script name
+      - name: Grab issues and generate HTML files
+        run: php issue.php
 
       - name: Commit and push changes
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add *.html
-          git commit -m "Daily update of generated HTML files" || exit 0
-          git pull --rebase origin main  # Pull with rebase to prevent conflicts
+          git commit -m "List new issues" || exit 0
+          git pull --rebase origin main
           git push origin main

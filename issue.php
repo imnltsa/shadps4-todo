@@ -48,6 +48,7 @@ $cusa_issues = [];
 $cusa_id_map = [];
 $unique_id = 1;
 $status_labels = ["status-playable", "status-ingame", "status-menus", "status-boots", "status-nothing"];
+$os_labels = ["os-windows", "os-linux", "os-macos"];
 
 foreach ($all_issues as $issue) {
     if (preg_match('/CUSA\d{5}/', $issue["title"], $matches)) {
@@ -64,6 +65,7 @@ foreach ($all_issues as $issue) {
                 // Determine the issue status based on labels
         $labels = array_column($issue["labels"], "name");
         $status = "Unknown"; // Default status
+        $os="Unknown";
 
         foreach ($status_labels as $label) {
             if (in_array($label, $labels)) {
@@ -71,13 +73,22 @@ foreach ($all_issues as $issue) {
                 break;
             }
         }
+                // Check OS label (there will only be one per issue)
+        foreach ($os_labels as $label) {
+            if (in_array($label, $labels)) {
+                $os = ucfirst(str_replace("os-", "", $label)); // Store OS label
+                break;
+            }
+        }
+        $status=strtolower($status);
+        $os=strtolower($os);
 
         // Initialize if not set
         if (!isset($cusa_issues[$unique_cusa_id])) {
             $cusa_issues[$unique_cusa_id] = [
                 "macOS" => false, "windows" => false, "linux" => false,
                 "issue" => null, "game_name" => $game_name, "cusa_id" => $cusa_id,
-                "status" => $status // Store status
+                "status" => $status, "os" => $os // Store OS info
             ];
         }
 
@@ -134,7 +145,7 @@ function generateHtml($title, $data) {
         }
     </style></head><body><h2>$title</h2><p>Here's a list of games that don't yet have an issue for the OS you selected.<br>Clicking a game will bring you to a report for the OS that DOES have a report, but not one for the OS you selected.<br><br><a href=\"https://github.com/shadps4-emu/shadps4-game-compatibility/issues/new?template=game_compatibility.yml\">Create blank issue</a><br><a href=\"./\">Test for another OS</a></p><hr><ul>";
     foreach ($data as $issue) {
-        $html .= "<li><a href='https://github.com/shadps4-emu/shadps4-game-compatibility/issues/new?template=game_compatibility.yml&title={$issue['cusa_id']}%20-%20{$issue['game_name']}&game-name={$issue['game_name']}&game-code={$issue['cusa_id']}'>I have this game</a> | <a href='{$issue['issue']}'>{$issue['cusa_id']} - {$issue['game_name']}</a> (probably currently status-<span class='status'>[{$issue['status']}]</span>)</li>";
+        $html .= "<li><a href='https://github.com/shadps4-emu/shadps4-game-compatibility/issues/new?template=game_compatibility.yml&title={$issue['cusa_id']}%20-%20{$issue['game_name']}&game-name={$issue['game_name']}&game-code={$issue['cusa_id']}'>I have this game</a> | <a href='{$issue['issue']}'>{$issue['cusa_id']} - {$issue['game_name']}</a> (likely status-{$issue['status']} on os-{$issue['os']})</li>";
     }
     $html .= "</ul></body></html>";
     return $html;

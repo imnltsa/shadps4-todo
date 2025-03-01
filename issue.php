@@ -118,9 +118,9 @@ function generateHtml($title, $data) {
         li {
             padding: 8px;
         }
-    </style></head><body><h2>$title</h2><p>Here's a list of games that don't yet have an issue for the OS you selected.<br>Clicking a game will bring you to a report for the OS that DOES have a report, but not one for the OS you selected.<br><br><a href=\"https://github.com/shadps4-emu/shadps4-game-compatibility/issues/new?template=game_compatibility.yml\">Create blank issue</a></p><hr><ul>";
+    </style></head><body><h2>$title</h2><p>Here's a list of games that don't yet have an issue for the OS you selected.<br>Clicking a game will bring you to a report for the OS that DOES have a report, but not one for the OS you selected.<br><br><a href=\"https://github.com/shadps4-emu/shadps4-game-compatibility/issues/new?template=game_compatibility.yml\">Create blank issue</a><br><a href=\"./\">Test for another OS</a></p><hr><ul>";
     foreach ($data as $issue) {
-        $html .= "<li><a href='https://github.com/shadps4-emu/shadps4-game-compatibility/issues/new?template=game_compatibility.yml&title={$issue['cusa_id']}%20-%20{$issue['game_name']}&game-name={$issue['game_name']}&game-code={$issue['cusa_id']}'>I HAVE THIS GAME</a> --- <a href='{$issue['issue']}'>{$issue['cusa_id']} - {$issue['game_name']}</a></li>";
+        $html .= "<li><a href='https://github.com/shadps4-emu/shadps4-game-compatibility/issues/new?template=game_compatibility.yml&title={$issue['cusa_id']}%20-%20{$issue['game_name']}&game-name={$issue['game_name']}&game-code={$issue['cusa_id']}'>I have this game</a> | <a href='{$issue['issue']}'>{$issue['cusa_id']} - {$issue['game_name']}</a></li>";
     }
     $html .= "</ul></body></html>";
     return $html;

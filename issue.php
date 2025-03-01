@@ -1,6 +1,7 @@
 <?php
 
 $options = getopt("c");
+$ftime = filemtime("style.css");
 
 if (isset($options["c"]) && file_exists("issues.json")) {
     echo "Using cached issues.json...\n";
@@ -143,9 +144,10 @@ usort($todo_macos, "sortByGameName");
 
 // Step 4: Generate HTML files
 function genOsCompare($os, $data, $cusa_issues) {
+    global $ftime;
     $tc = count($data);
     $html = "<html lang=\"en\"><head><title>Missing shadPS4 Compatibility Reports for $os</title>
-    <link href=\"style.css\" rel=\"stylesheet\" /></head><body><h1>Missing <a target=\"_blank\" href=\"https://github.com/shadps4-emu/shadps4\">shadPS4</a> Compatibility Reports for $os</h1><p>Here's a list of games that don't yet have an issue for $os. If you have one of these games, press 'I have this game'.<br><br>This list does not include <a href=\"https://serialstation.com\">every game</a>; if you have a game that is not in any <a target=\"_blank\" href=\"https://github.com/shadps4-emu/shadps4-game-compatibility/issues\">compatibility issues</a>, please <a target=\"_blank\" href=\"https://github.com/shadps4-emu/shadps4-game-compatibility/issues/new?template=game_compatibility.yml\">create a new blank issue</a>.<br><br>Total missing games for $os: $tc - <a href=\"index.html\">Test for another OS</a></p><br><hr><ul>";
+    <link href=\"style.css?$ftime\" rel=\"stylesheet\" /></head><body><h1>Missing <a target=\"_blank\" href=\"https://github.com/shadps4-emu/shadps4\">shadPS4</a> Compatibility Reports for $os</h1><p>Here's a list of titles that don't yet have an issue for $os. If you have one of these games, press 'I have this title'.<br><br>This list does not include <a href=\"https://serialstation.com\">every title</a>; if you have a title that is not in any <a target=\"_blank\" href=\"https://github.com/shadps4-emu/shadps4-game-compatibility/issues\">compatibility issues</a>, please <a target=\"_blank\" href=\"https://github.com/shadps4-emu/shadps4-game-compatibility/issues/new?template=game_compatibility.yml\">create a new blank issue</a>.<br><br>Total missing issues for $os: $tc - <a href=\"index.html\">Test for another OS</a></p><br><hr><ul>";
 
     $seen_cusas = [];
 
@@ -161,7 +163,7 @@ function genOsCompare($os, $data, $cusa_issues) {
         }
 
         $game = $info["game"];
-        $html .= "<li><span><a target=\"_blank\" href=\"https://github.com/shadps4-emu/shadps4-game-compatibility/issues?q=$cusa\">Search</a> | <a target=\"_blank\" href=\"https://github.com/shadps4-emu/shadps4-game-compatibility/issues/new?template=game_compatibility.yml&title={$cusa}%20-%20{$game}&game-name={$game}&game-code={$cusa}\"><b><i>I have this game</i></b></a> | {$cusa} &#x2022; {$game}";
+        $html .= "<li><span><a target=\"_blank\" href=\"https://github.com/shadps4-emu/shadps4-game-compatibility/issues?q=$cusa\">Search</a> | <a target=\"_blank\" href=\"https://github.com/shadps4-emu/shadps4-game-compatibility/issues/new?template=game_compatibility.yml&title={$cusa}%20-%20{$game}&game-name={$game}&game-code={$cusa}\"><b><i>I have this title</i></b></a> | {$cusa} &#x2022; {$game}";
         $html .= " (";
         $c = 0;
         foreach ($cusa_issues as $check_id => $check_info) {
@@ -253,13 +255,22 @@ function sortByGameNameIssues($a, $b) {
 
 usort($issues_data, "sortByGameNameIssues");
 
+ $pwin=0;
+ $pmac=0;
+ $plin=0;
 function genOsBacktrack($os, $data, $cusa_issues) {
-    $tc = count($data);
-    $html = "<html lang=\"en\"><head><title>Outdated shadPS4 Compatibility Reports for $os</title>
-    <link href=\"style.css\" rel=\"stylesheet\" /></head><body><h1>Outdated <a target=\"_blank\" href=\"https://github.com/shadps4-emu/shadps4\">shadPS4</a> Compatibility Reports for $os</h1><p>Here's a list of games that have issues for $os yet are outdated. If you have one of these games, press 'I have this game'.<br><br>This list does not include <a href=\"https://serialstation.com\">every game</a>; if you have a game that is not in any <a target=\"_blank\" href=\"https://github.com/shadps4-emu/shadps4-game-compatibility/issues\">compatibility issues</a>, please <a target=\"_blank\" href=\"https://github.com/shadps4-emu/shadps4-game-compatibility/issues/new?template=game_compatibility.yml\">create a new blank issue</a>.<br><br>Total outdated games for $os: $tc - <a href=\"index.html\">Test for another OS</a></p><br><hr><ul>";
+    global $pwin, $pmac, $plin, $ftime;
+    $filtered_data = array_filter($data, function($title) use ($os) {
+        return in_array(strtolower($os), array_map('strtolower', $title["os"]));
+    });
+
+    // Count the filtered data
+    $tc = count($filtered_data);
+    $unplayable_count = 0;
+
 
     $seen_cusas = [];
-
+    $thtml="";
     foreach ($data as $title) {
         $cusa = $title["cusa"];
         if (in_array($cusa, $seen_cusas)) {
@@ -270,24 +281,58 @@ function genOsBacktrack($os, $data, $cusa_issues) {
         $issueos = reset($title["os"]);
         if (strtolower($issueos) != strtolower($os)) continue;
 
+
+        
         $game = $title["game_name"];
         $issuenum = $title["issue_number"];
-        $html .= "<li><span><a target=\"_blank\" href=\"https://github.com/shadps4-emu/shadps4-game-compatibility/issues?q=$cusa\">Search</a> | <a target=\"_blank\" href=\"https://github.com/shadps4-emu/shadps4-game-compatibility/issues/$issuenum\"><b><i>I have this game</i></b></a> | {$cusa} &#x2022; {$game}";
-        $html .= " (";
+        $is_playable = false;
+        foreach ($cusa_issues as $check_id => $check_info) {
+            if ($check_info["cusa"] === $cusa) {
+                foreach ($check_info["issues"] as $issue) {
+                    if (strtolower($issue["os"]) === strtolower($os) && strtolower($issue["status"]) === "playable") {
+                        $is_playable = true;
+                        break 2;
+                    }
+                }
+            }
+        }
+
+        if (!$is_playable) {
+            $unplayable_count++;
+            if(strtolower($os) == "windows") $pwin++;
+            if(strtolower($os) == "macos") $pmac++;
+           // echo $pmac."\n";
+            if(strtolower($os) == "linux") $plin++;
+        } else {
+
+        }
+
+        $thtml .= "<li" . ($is_playable ? " title=\"This title is considered playable on $os\" class=\"grey\"" : "") . "><span><a target=\"_blank\" href=\"https://github.com/shadps4-emu/shadps4-game-compatibility/issues?q=$cusa\">Search</a> | <a target=\"_blank\" href=\"https://github.com/shadps4-emu/shadps4-game-compatibility/issues/$issuenum\"><b><i>I have this title</i></b></a> | {$cusa} &#x2022; {$game}";
+        $thtml .= " (";
         $c = 0;
         foreach ($cusa_issues as $check_id => $check_info) {
             if ($check_info["cusa"] === $cusa) {
                 foreach ($check_info["issues"] as $issue) {
-                    if ($c > 0) $html .= ", ";
+                    if ($c > 0) $thtml .= ", ";
                     $c++;
-                    $html .= "<a target=\"_blank\" href=\"{$issue["url"]}\">{$issue["os"]} {$issue["status"]}</a>";
+                    $thtml .= "<a target=\"_blank\" href=\"{$issue["url"]}\">{$issue["os"]} {$issue["status"]}</a>";
                 }
             }
         }
-        $html .= ")</span></li>";
+        $thtml .= ")</span></li>";
     }
+    $utc=0;
+    if(strtolower($os) == "windows") $utc=$pwin;
+    if(strtolower($os) == "macos") $utc=$pmac;
+    if(strtolower($os) == "linux") $utc=$plin;
+    $html = "<html lang=\"en\"><head><title>Outdated shadPS4 Compatibility Reports for $os</title>
+    <link href=\"style.css?$ftime\" rel=\"stylesheet\" /></head><body><h1>Outdated <a target=\"_blank\" href=\"https://github.com/shadps4-emu/shadps4\">shadPS4</a> Compatibility Reports for $os</h1><p>Here's a list of titles that have issues for $os yet are outdated. If you have one of these games, press 'I have this title'.<br><br>This list does not include <a href=\"https://serialstation.com\">every title</a>; if you have a title that is not in any <a target=\"_blank\" href=\"https://github.com/shadps4-emu/shadps4-game-compatibility/issues\">compatibility issues</a>, please <a target=\"_blank\" href=\"https://github.com/shadps4-emu/shadps4-game-compatibility/issues/new?template=game_compatibility.yml\">create a new blank issue</a>.<br><br>
+    Total outdated issues for $os: $utc <span title=\"Count including playable titles\" class=\"grey\">($tc)</span> - <a href=\"index.html\">Test for another OS</a></p><br><hr><ul>";
+
+        $html .= $thtml;
 
     $html .= "</ul><hr><br><p><a href=\"index.html\">Test for another OS</a><br><br><br></p></body></html>";
+    //$html = str_replace("$unplayable_count ($tc)", "$unplayable_count <span title=\"Count including playable titles\">($tc)</span>", $html);
     return $html;
 }
 
@@ -300,31 +345,32 @@ $windows_missing_count = count($todo_windows);
 $macos_missing_count = count($todo_macos);
 
 $linux_outdated_count = count(array_filter($issues_data, function($issue) {
-    return in_array("linux", array_map('strtolower', $issue["os"]));
+    return in_array("linux", array_map('strtolower', $issue["os"])) && strtolower(reset($issue["os"])) !== "playable";
 }));
 $windows_outdated_count = count(array_filter($issues_data, function($issue) {
-    return in_array("windows", array_map('strtolower', $issue["os"]));
+    return in_array("windows", array_map('strtolower', $issue["os"])) && strtolower(reset($issue["os"])) !== "playable";
 }));
 $macos_outdated_count = count(array_filter($issues_data, function($issue) {
-    return in_array("macos", array_map('strtolower', $issue["os"]));
+    return in_array("macos", array_map('strtolower', $issue["os"])) && strtolower(reset($issue["os"])) !== "playable";
 }));
+
 
 $index_html = <<<HTML
 <html lang="en">
 <head>
     <title>Missing shadPS4 Compatibility Reports</title>
-    <link href="style.css" rel="stylesheet" />
+    <link href="style.css?$ftime" rel="stylesheet" />
 </head>
 <body>
     <h1>Missing <a target="_blank" href="https://github.com/shadps4-emu/shadps4">shadPS4</a> Compatibility Reports</h1>
     <p>Click the operating system on which you would like to make an issue for.<br>If you have one of the games listed, you can be the first to create an issue for it.</p><br><hr>
     <ul>
         <li><a href="linux_missing.html">Missing issues for Linux</a> - $linux_missing_count</li>
-        <li><a href="linux_outdated.html">Outdated issues for Linux</a> - $linux_outdated_count</li>
+        <li><a href="linux_outdated.html">Outdated issues for Linux</a> - $plin <span class="grey" title="Count including playable titles">($linux_outdated_count)</span></li>
         <li><a href="windows_missing.html">Missing issues for Windows</a> - $windows_missing_count</li>
-        <li><a href="windows_outdated.html">Outdated issues for Windows</a> - $windows_outdated_count</li>
+        <li><a href="windows_outdated.html">Outdated issues for Windows</a> - $pwin <span class="grey" title="Count including playable titles">($windows_outdated_count)</span></li>
         <li><a href="macos_missing.html">Missing issues for macOS</a> - $macos_missing_count</li>
-        <li><a href="macos_outdated.html">Outdated issues for macOS</a> - $macos_outdated_count</li>
+        <li><a href="macos_outdated.html">Outdated issues for macOS</a> - $pmac <span class="grey" title="Count including playable titles">($macos_outdated_count)</span></li>
     </ul>
     <hr><p><br>This list is updated daily via <a target="_blank" href="https://github.com/imnltsa/shadps4-todo/actions">GitHub Actions</a>.<br><br>Note: This does not show incorrectly named/tagged games.<br>Note: This does not include games that do not have any existing issues.<br><br><br></p>
 </body>

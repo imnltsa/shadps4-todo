@@ -91,7 +91,7 @@ $todo_linux = array_filter($cusa_issues, fn($d) => ($d["windows"] || $d["macOS"]
 $todo_macos = array_filter($cusa_issues, fn($d) => ($d["windows"] || $d["linux"]) && !$d["macOS"]);
 
 function generateHtml($title, $data) {
-    $html = "<html><head><title>$title</title></head><body><h2>$title</h2><ul>";
+    $html = "<html><head><title>$title</title></head><body><p>Here's a list of games that don't yet have an issue for the OS you selected. Clicking a game will bring you to a report for the OS that DOES have a report, but not one for the OS you selected.</p><hr><h2>$title</h2><ul>";
     foreach ($data as $issue) {
         $html .= "<li><a href='{$issue['issue']}'>{$issue['cusa_id']} - {$issue['game_name']}</a></li>";
     }
@@ -117,11 +117,11 @@ $index_html = <<<HTML
     <h2>Missing <a href="">shadPS4</a> Compatibility Reports</h2>
     <p>Click the operating system on which you would like to test. If you have one of the games listed, you can be the first to create an issue for it.</p><hr>
     <ul>
-        <li><a href="todo_linux.html">Linux Compatibility List</a></li>
-        <li><a href="todo_windows.html">Windows Compatibility List</a></li>
-        <li><a href="todo_macos.html">macOS Compatibility List</a></li>
+        <li><a href="todo_linux.html">Missing issues for Linux</a></li>
+        <li><a href="todo_windows.html">Missing issues for Windows</a></li>
+        <li><a href="todo_macos.html">Missing issues for macOS</a></li>
     </ul>
-    <p>While this does not contain a list of games missing from shadPS4 compatibility list (yet), it contains a list of games that ARE available on the compatibility list but don't have issues for every OS.<br>This list is updated daily via GitHub Actions.</p>
+    <p>While this does not contain a list of games missing from shadPS4 compatibility list (yet), it contains a list of games that ARE available on the compatibility list but don't have issues for every OS.<br><br>This list is updated daily via GitHub Actions.</p>
 </body>
 </html>
 HTML;

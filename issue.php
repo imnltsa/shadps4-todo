@@ -48,7 +48,7 @@ $cusa_issues = [];
 $cusa_id_map = [];
 $unique_id = 1;
 $status_labels = ["status-playable", "status-ingame", "status-menus", "status-boots", "status-nothing"];
-$os_labels = ["os-windows", "os-linux", "os-macos"];
+$os_labels = ["os-windows", "os-linux", "os-macOS"];
 
 foreach ($all_issues as $issue) {
     if (preg_match('/CUSA\d{5}/', $issue["title"], $matches)) {
@@ -62,10 +62,10 @@ foreach ($all_issues as $issue) {
         $title_parts = explode(" - ", $issue["title"]);
         $game_name = $title_parts[1] ?? "Unknown Game";
 
-                // Determine the issue status based on labels
+        // Determine the issue status based on labels
         $labels = array_column($issue["labels"], "name");
         $status = "Unknown"; // Default status
-        $os="Unknown";
+        $os = "Unknown"; // Default OS
 
         foreach ($status_labels as $label) {
             if (in_array($label, $labels)) {
@@ -73,120 +73,103 @@ foreach ($all_issues as $issue) {
                 break;
             }
         }
-                // Check OS label (there will only be one per issue)
+
+        // Check OS label (there will only be one per issue)
         foreach ($os_labels as $label) {
             if (in_array($label, $labels)) {
                 $os = ucfirst(str_replace("os-", "", $label)); // Store OS label
                 break;
             }
         }
-        $status=strtolower($status);
-        $os=strtolower($os);
 
         // Initialize if not set
-        if (!isset($cusa_issues[$unique_cusa_id])) {
-            $cusa_issues[$unique_cusa_id] = [
-                "macOS" => false, "windows" => false, "linux" => false,
-                "issue" => null, "game_name" => $game_name, "cusa_id" => $cusa_id,
-                "status" => $status, "os" => $os // Store OS info
-            ];
+        if (!isset($cusa_issues[$cusa_id])) {
+            $cusa_issues[$cusa_id] = [];
         }
 
-    //    $labels = array_column($issue["labels"], "name");
-
-        if (in_array("os-macos", $labels)) {
-            $cusa_issues[$unique_cusa_id]["macOS"] = true;
-            $cusa_issues[$unique_cusa_id]["issue"] = $issue["html_url"];
-        }
-        if (in_array("os-linux", $labels)) {
-            $cusa_issues[$unique_cusa_id]["linux"] = true;
-            $cusa_issues[$unique_cusa_id]["issue"] = $issue["html_url"];
-        }
-        if (in_array("os-windows", $labels)) {
-            $cusa_issues[$unique_cusa_id]["windows"] = true;
-            $cusa_issues[$unique_cusa_id]["issue"] = $issue["html_url"];
-        }
+        // Add this issue to the list for the current CUSA ID (allow duplicates)
+        $cusa_issues[$cusa_id][] = [
+            "issue" => $issue["html_url"],
+            "game_name" => $game_name,
+            "status" => strtolower($status), // Store status in lowercase
+            "os" => strtolower($os), // Store OS in lowercase
+	    "cusa" => $cusa_id
+        ];
     }
 }
 
-uasort($cusa_issues, fn($a, $b) => strcmp($a["game_name"], $b["game_name"]));
+// Sorting by game name
+uasort($cusa_issues, fn($a, $b) => strcmp($a[0]["game_name"], $b[0]["game_name"]));
 
-$todo_windows = array_filter($cusa_issues, fn($d) => ($d["macOS"] || $d["linux"]) && !$d["windows"]);
-$todo_linux = array_filter($cusa_issues, fn($d) => ($d["windows"] || $d["macOS"]) && !$d["linux"]);
-$todo_macos = array_filter($cusa_issues, fn($d) => ($d["windows"] || $d["linux"]) && !$d["macOS"]);
+// Prepare the issue categories
+$todo_windows = [];
+$todo_linux = [];
+$todo_macos = [];
 
+foreach ($cusa_issues as $cusa_id => $issues) {
+    $has_windows = false;
+    $has_linux = false;
+    $has_macos = false;
+
+    // Check if each OS is present for this CUSA ID
+    foreach ($issues as $issue) {
+        if ($issue["os"] === "windows") {
+            $has_windows = true;
+        }
+        if ($issue["os"] === "linux") {
+            $has_linux = true;
+        }
+        if ($issue["os"] === "macos") {
+            $has_macos = true;
+        }
+    }
+
+    // Add to the appropriate OS-specific lists
+    if ($has_windows && !$has_linux && !$has_macos) {
+        $todo_windows[] = $issues;
+    }
+    if (!$has_windows && $has_linux && !$has_macos) {
+        $todo_linux[] = $issues;
+    }
+    if (!$has_windows && !$has_linux && $has_macos) {
+        $todo_macos[] = $issues;
+    }
+}
+
+// Function to generate the HTML
 function generateHtml($title, $data) {
-    $html = "<html><head><title>$title</title>    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: white;
-            color: black;
-        }
-
-        @media (prefers-color-scheme: dark) {
-            body {
-                background-color: #121212;
-                color: white;
-            }
-            a {
-                color: #bb86fc;
-            }
-        }
-
-        h2 {
-            text-align: center;
-        }
-        ul {
-            list-style-type: none;
-            padding: 0;
-        }
-        li {
-            padding: 8px;
-        }
+    $html = "<html><head><title>$title</title><style>
+        body { font-family: Arial, sans-serif; background-color: white; color: black; }
+        @media (prefers-color-scheme: dark) { body { background-color: #121212; color: white; } a { color: #bb86fc; } }
+        h2 { text-align: center; }
+        ul { list-style-type: none; padding: 0; }
+        li { padding: 8px; }
     </style></head><body><h2>$title</h2><p>Here's a list of games that don't yet have an issue for the OS you selected.<br>Clicking a game will bring you to a report for the OS that DOES have a report, but not one for the OS you selected.<br><br><a href=\"https://github.com/shadps4-emu/shadps4-game-compatibility/issues/new?template=game_compatibility.yml\">Create blank issue</a><br><a href=\"./\">Test for another OS</a></p><hr><ul>";
-    foreach ($data as $issue) {
-        $html .= "<li><a href='https://github.com/shadps4-emu/shadps4-game-compatibility/issues/new?template=game_compatibility.yml&title={$issue['cusa_id']}%20-%20{$issue['game_name']}&game-name={$issue['game_name']}&game-code={$issue['cusa_id']}'>I have this game</a> | <a href='{$issue['issue']}'>{$issue['cusa_id']} - {$issue['game_name']}</a> (likely status-{$issue['status']} on os-{$issue['os']})</li>";
+    
+    foreach ($data as $issues) {
+        foreach ($issues as $issue) {
+            $html .= "<li><a href='https://github.com/shadps4-emu/shadps4-game-compatibility/issues/new?template=game_compatibility.yml&title={$issue['cusa']}%20-%20{$issue['game_name']}&game-name={$issue['game_name']}&game-code={$issue['cusa']}'>I have this game</a> | <a href='{$issue['issue']}'>{$issue['cusa']} - {$issue['game_name']}</a> (status-{$issue['status']} on os-{$issue['os']})</li>";
+        }
     }
     $html .= "</ul></body></html>";
     return $html;
 }
 
-file_put_contents("todo_linux.html", generateHtml("Missing issues for Linux", $todo_linux, "linux"));
-file_put_contents("todo_windows.html", generateHtml("Missing issues for Windows", $todo_windows, "windows"));
-file_put_contents("todo_macos.html", generateHtml("Missing issues for macOS", $todo_macos, "macos"));
+file_put_contents("todo_linux.html", generateHtml("Missing issues for Linux", $todo_linux));
+file_put_contents("todo_windows.html", generateHtml("Missing issues for Windows", $todo_windows));
+file_put_contents("todo_macos.html", generateHtml("Missing issues for macOS", $todo_macos));
 
 // Generate index.html linking to all three files
 $index_html = <<<HTML
 <html>
 <head>
     <title>Missing shadPS4 Compatibility Reports</title>
-       <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: white;
-            color: black;
-        }
-
-        @media (prefers-color-scheme: dark) {
-            body {
-                background-color: #121212;
-                color: white;
-            }
-            a {
-                color: #bb86fc;
-            }
-        }
-
-        h2 {
-            text-align: center;
-        }
-        ul {
-            list-style-type: none;
-            padding: 0;
-        }
-        li {
-            padding: 8px;
-        }
+    <style>
+        body { font-family: Arial, sans-serif; background-color: white; color: black; }
+        @media (prefers-color-scheme: dark) { body { background-color: #121212; color: white; } a { color: #bb86fc; } }
+        h2 { text-align: center; }
+        ul { list-style-type: none; padding: 0; }
+        li { padding: 8px; }
     </style>
 </head>
 <body>
@@ -203,4 +186,3 @@ $index_html = <<<HTML
 HTML;
 
 file_put_contents("index.html", $index_html);
-echo "Generated index.html\n";

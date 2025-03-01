@@ -118,7 +118,7 @@ function generateHtml($title, $data) {
         li {
             padding: 8px;
         }
-    </style></head><body><h2>$title</h2><p>Here's a list of games that don't yet have an issue for the OS you selected. Clicking a game will bring you to a report for the OS that DOES have a report, but not one for the OS you selected.</p><hr><ul>";
+    </style></head><body><h2>$title</h2><p>Here's a list of games that don't yet have an issue for the OS you selected.<br>Clicking a game will bring you to a report for the OS that DOES have a report, but not one for the OS you selected.<br><br><a href=\"https://github.com/shadps4-emu/shadps4-game-compatibility/issues/new?template=game_compatibility.yml\">Create blank issue</a></p><hr><ul>";
     foreach ($data as $issue) {
         $html .= "<li><a href='{$issue['issue']}'>{$issue['cusa_id']} - {$issue['game_name']}</a></li>";
     }
@@ -135,6 +135,34 @@ $index_html = <<<HTML
 <html>
 <head>
     <title>Missing shadPS4 Compatibility Reports</title>
+       <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: white;
+            color: black;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            body {
+                background-color: #121212;
+                color: white;
+            }
+            a {
+                color: #bb86fc;
+            }
+        }
+
+        h2 {
+            text-align: center;
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        li {
+            padding: 8px;
+        }
+    </style>
 </head>
 <body>
     <h2>Missing <a href="https://github.com/shadps4-emu/shadps4">shadPS4</a> Compatibility Reports</h2>

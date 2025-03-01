@@ -125,7 +125,7 @@ usort($todo_macos, "sortByGameName");
 // Step 4: Generate HTML files
 function genOsList($os, $data) {
     $html = "<html><head><title>Missing shadPS4 Compatibility Reports | $os</title>
-    <link href=\"style.css\" rel=\"stylesheet\" /></head><body><h1>Missing compatibility reports for $os</h1><p>Here's a list of games that don't yet have an issue for $os.<br>Clicking a game will bring you to a report for the OS that DOES have a report, but not one for $os.<br><br><a href=\"https://github.com/shadps4-emu/shadps4-game-compatibility/issues/new?template=game_compatibility.yml\">Create blank issue</a><br><br><a href=\"./\">Test for another OS</a></p><br><hr><ul>";
+    <link href=\"style.css\" rel=\"stylesheet\" /></head><body><h1>Missing compatibility reports for $os</h1><p>Here's a list of games that don't yet have an issue for $os.<br>Clicking a game will bring you to a report for the OS that DOES have a report, but not one for $os.<br>This does not include every game; if you have a game that is not in any [compatibility issue](https://github.com/shadps4-emu/shadps4-game-compatibility/issues), please create a new blank issue.<br><br><a href=\"https://github.com/shadps4-emu/shadps4-game-compatibility/issues/new?template=game_compatibility.yml\">Create blank issue</a><br><br><a href=\"./\">Test for another OS</a></p><br><hr><ul>";
         foreach ($data as $cusa_id => $info) {
             $game_name = $info["game_name"];
             $cusa = $info["cusa"];
@@ -156,13 +156,13 @@ $index_html = <<<HTML
 </head>
 <body>
     <h1>Missing <a href="https://github.com/shadps4-emu/shadps4">shadPS4</a> Compatibility Reports</h1>
-    <p>Click the operating system on which you would like to make an issue for. If you have one of the games listed, you can be the first to create an issue for it.</p><hr>
+    <p>Click the operating system on which you would like to make an issue for.<br>If you have one of the games listed, you can be the first to create an issue for it.</p><br><hr>
     <ul>
         <li><a href="todo_linux.html">Missing issues for Linux</a></li>
         <li><a href="todo_windows.html">Missing issues for Windows</a></li>
         <li><a href="todo_macos.html">Missing issues for macOS</a></li>
     </ul>
-    <hr><p><br>This list is updated daily via GitHub Actions.<br>Note: This does not show incorrectly named/tagged games.<br><br><br></p>
+    <hr><p><br>This list is updated daily via GitHub Actions.<br>Note: This does not show incorrectly named/tagged games.<br>Note: This does not include games that do not have any existing issues.<br><br><br></p>
 </body>
 </html>
 HTML;

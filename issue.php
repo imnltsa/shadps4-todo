@@ -125,13 +125,13 @@ foreach ($cusa_issues as $cusa_id => $issues) {
     }
 
     // Add to the appropriate OS-specific lists
-    if (!$has_windows && ($has_linux || $has_macos)) {
+    if (!$has_windows) {
         $todo_windows[] = $issues;
     }
-    if (!$has_linux && ($has_macos || $has_windows)) {
+    if (!$has_linux) {
         $todo_linux[] = $issues;
     }
-    if (!$has_macos && ($has_linux || $has_windows)) {
+    if (!$has_macos) {
         $todo_macos[] = $issues;
     }
 }

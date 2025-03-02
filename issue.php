@@ -3,9 +3,10 @@
 $options = getopt("c");
 $ftime = filemtime("style.css");
 
-if (isset($options["c"]) && file_exists("issues.json")) {
-    echo "Using cached issues.json...\n";
+if (isset($options["c"]) && file_exists("issues.json") && file_exists("milestones.json")) {
+    echo "Using cached issues.json and milestones.json...\n";
     $all_issues = json_decode(file_get_contents("issues.json"), true);
+    $milestones = json_decode(file_get_contents("milestones.json"), true);
 } else {
     echo "Fetching issues from GitHub...\n";
     $all_issues = [];
@@ -13,7 +14,7 @@ if (isset($options["c"]) && file_exists("issues.json")) {
 
     do {
         $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, "https://api.github.com/repos/shadps4-emu/shadps4-game-compatibility/issues?per_page=100&page=$page");
+        curl_setopt($ch, CURLOPT_URL, "https://api.github.com/repos/shadps4-emu/shadps4-game-compatibility/issues?state=open&per_page=100&page=$page");
         curl_setopt($ch, CURLOPT_HTTPHEADER, ["User-Agent: PHP-Script", "Accept: application/vnd.github.v3+json"]);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
@@ -45,6 +46,34 @@ if (isset($options["c"]) && file_exists("issues.json")) {
 
     file_put_contents("issues.json", json_encode($all_issues, JSON_PRETTY_PRINT));
     echo "Fetched all issues, total: " . count($all_issues) . "\n";
+
+    echo "Fetching milestones from GitHub...\n";
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, "https://api.github.com/repos/shadps4-emu/shadps4-game-compatibility/milestones?state=open");
+    curl_setopt($ch, CURLOPT_HTTPHEADER, ["User-Agent: PHP-Script", "Accept: application/vnd.github.v3+json"]);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+
+    $response = curl_exec($ch);
+    if (curl_errno($ch)) {
+        die("cURL error: " . curl_error($ch) . "\n");
+    }
+
+    $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($http_code !== 200) {
+        die("Failed to fetch milestones! HTTP code: $http_code\n");
+    }
+
+    $milestones = json_decode($response, true);
+    if (!is_array($milestones)) {
+        die("JSON decoding error: " . json_last_error_msg() . "\nResponse:\n$response\n");
+    }
+
+    file_put_contents("milestones.json", json_encode($milestones, JSON_PRETTY_PRINT));
+    echo "Fetched all milestones.\n";
 }
 
 $cusa_issues = [];
@@ -140,8 +169,6 @@ usort($todo_windows, "sortByGameName");
 usort($todo_linux, "sortByGameName");
 usort($todo_macos, "sortByGameName");
 
-
-
 // Step 4: Generate HTML files
 function genOsCompare($os, $data, $cusa_issues) {
     global $ftime;
@@ -192,30 +219,6 @@ file_put_contents("windows_missing.html", genOsCompare("Windows", $todo_windows,
 file_put_contents("macos_missing.html", genOsCompare("macOS", $todo_macos, $cusa_issues));
 
 // hell time
-
-$ch = curl_init();
-curl_setopt($ch, CURLOPT_URL, "https://api.github.com/repos/shadps4-emu/shadps4-game-compatibility/milestones?state=all");
-curl_setopt($ch, CURLOPT_HTTPHEADER, ["User-Agent: PHP-Script", "Accept: application/vnd.github.v3+json"]);
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-
-$response = curl_exec($ch);
-if (curl_errno($ch)) {
-    die("cURL error: " . curl_error($ch) . "\n");
-}
-
-$http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-curl_close($ch);
-
-if ($http_code !== 200) {
-    die("Failed to fetch milestones! HTTP code: $http_code\n");
-}
-
-$milestones = json_decode($response, true);
-if (!is_array($milestones)) {
-    die("JSON decoding error: " . json_last_error_msg() . "\nResponse:\n$response\n");
-}
 
 // Determine the latest milestone by ID
 $latest_milestone = null;
@@ -335,7 +338,7 @@ function genOsBacktrack($os, $data, $cusa_issues) {
 
         $html .= $thtml;
 
-    $html .= "</ul><hr><br><p><a href=\"index.html\">Back to Overview</a> - <a href=\"https://github.com/shadps4-emu/shadps4-game-compatibility/issues?q=label%3A%22os-$os%22%20(label%3A%22status-nothing%22%20OR%20label%3A%22status-boots%22%20OR%20label%3A%22status-menus%22%20OR%20label%3A%22status-ingame%22)%20\">All Non-Playable Games for $los</a><br><br><br></p></body></html>";
+    $html .= "</ul><hr><br><p><a href=\"index.html\">Back to Overview</a> - <a href=\"https://github.com/shadps4-emu/shadps4-game-compatibility/issues?q=label%3A%22os-$os%22%20(label%3A%22status-nothing%22%20OR%20label%3A%22status-boots%22%20OR%20label%3A%22status-menus%22%20OR%20label%3A%22status-ingame%22)%20\">All Non-Playable Games for $os</a><br><br><br></p></body></html>";
     //$html = str_replace("$unplayable_count ($tc)", "$unplayable_count <span title=\"Count including playable titles\">($tc)</span>", $html);
     return $html;
 }

@@ -146,9 +146,8 @@ usort($todo_macos, "sortByGameName");
 function genOsCompare($os, $data, $cusa_issues) {
     global $ftime;
     $tc = count($data);
-    $los=strtolower($os);
     $html = "<html lang=\"en\"><head><title>Missing shadPS4 Compatibility Reports for $os</title>
-    <link href=\"style.css?$ftime\" rel=\"stylesheet\" /></head><body><h1>Missing <a target=\"_blank\" href=\"https://github.com/shadps4-emu/shadps4\">shadPS4</a> Compatibility Reports for $os</h1><p>Here's a list of titles that don't yet have an issue for $os. If you have one of these games, press 'I have this title'.<br><br>This list does not include <a href=\"https://serialstation.com\">every title</a>; if you have a title that is not in any <a target=\"_blank\" href=\"https://github.com/shadps4-emu/shadps4-game-compatibility/issues\">compatibility issues</a>, please <a target=\"_blank\" href=\"https://github.com/shadps4-emu/shadps4-game-compatibility/issues/new?template=game_compatibility.yml\">create a new blank issue</a>.<br><br><a href=\"index.html\">Back to Overview</a> - Total missing issues for $os: $tc - <a href=\"https://github.com/shadps4-emu/shadps4-game-compatibility/issues?q=label%3A%22os-$los%22%20(label%3A%22status-nothing%22%20OR%20label%3A%22status-boots%22%20OR%20label%3A%22status-menus%22%20OR%20label%3A%22status-ingame%22)%20\">All Non-Playable Games for $los</a></p><br><hr><ul>";
+    <link href=\"style.css?$ftime\" rel=\"stylesheet\" /></head><body><h1>Missing <a target=\"_blank\" href=\"https://github.com/shadps4-emu/shadps4\">shadPS4</a> Compatibility Reports for $os</h1><p>Here's a list of titles that don't yet have an issue for $os. If you have one of these games, press 'I have this title'.<br><br>This list does not include <a href=\"https://serialstation.com\">every title</a>; if you have a title that is not in any <a target=\"_blank\" href=\"https://github.com/shadps4-emu/shadps4-game-compatibility/issues\">compatibility issues</a>, please <a target=\"_blank\" href=\"https://github.com/shadps4-emu/shadps4-game-compatibility/issues/new?template=game_compatibility.yml\">create a new blank issue</a>.<br><br><a href=\"index.html\">Back to Overview</a> - Total missing issues for $os: $tc - <a href=\"https://github.com/shadps4-emu/shadps4-game-compatibility/issues?q=label%3A%22os-$os%22%20(label%3A%22status-nothing%22%20OR%20label%3A%22status-boots%22%20OR%20label%3A%22status-menus%22%20OR%20label%3A%22status-ingame%22)%20\">All Non-Playable Games for $os</a></p><br><hr><ul>";
 
     $seen_cusas = [];
 
@@ -184,7 +183,7 @@ function genOsCompare($os, $data, $cusa_issues) {
         $html .= ")</span></li>";
     }
 
-    $html .= "</ul><hr><br><p><a href=\"index.html\">Back to Overview</a> - <a href=\"https://github.com/shadps4-emu/shadps4-game-compatibility/issues?q=label%3A%22os-$los%22%20(label%3A%22status-nothing%22%20OR%20label%3A%22status-boots%22%20OR%20label%3A%22status-menus%22%20OR%20label%3A%22status-ingame%22)%20\">All Non-Playable Games for $los</a><br><br><br></p></body></html>";
+    $html .= "</ul><hr><br><p><a href=\"index.html\">Back to Overview</a> - <a href=\"https://github.com/shadps4-emu/shadps4-game-compatibility/issues?q=label%3A%22os-$os%22%20(label%3A%22status-nothing%22%20OR%20label%3A%22status-boots%22%20OR%20label%3A%22status-menus%22%20OR%20label%3A%22status-ingame%22)%20\">All Non-Playable Games for $os</a><br><br><br></p></body></html>";
     return $html;
 }
 
@@ -277,7 +276,6 @@ function genOsBacktrack($os, $data, $cusa_issues) {
 
     $seen_cusas = [];
     $thtml="";
-    $los=strtolower($os);
     foreach ($data as $title) {
         $cusa = $title["cusa"];
         if (in_array($cusa, $seen_cusas)) {
@@ -333,11 +331,11 @@ function genOsBacktrack($os, $data, $cusa_issues) {
     if(strtolower($os) == "linux") $utc=$plin;
     $html = "<html lang=\"en\"><head><title>Outdated shadPS4 Compatibility Reports for $os</title>
     <link href=\"style.css?$ftime\" rel=\"stylesheet\" /></head><body><h1>Outdated <a target=\"_blank\" href=\"https://github.com/shadps4-emu/shadps4\">shadPS4</a> Compatibility Reports for $os</h1><p>Here's a list of titles that have issues for $os yet are outdated. If you have one of these games, press 'I have this title'.<br><br>This list does not include <a href=\"https://serialstation.com\">every title</a>; if you have a title that is not in any <a target=\"_blank\" href=\"https://github.com/shadps4-emu/shadps4-game-compatibility/issues\">compatibility issues</a>, please <a target=\"_blank\" href=\"https://github.com/shadps4-emu/shadps4-game-compatibility/issues/new?template=game_compatibility.yml\">create a new blank issue</a>.<br><br>
-    <a href=\"index.html\">Back to Overview</a> - Total outdated issues for $os: $utc <span title=\"Count including playable titles\" class=\"grey\">($tc)</span> - <a href=\"https://github.com/shadps4-emu/shadps4-game-compatibility/issues?q=label%3A%22os-$los%22%20(label%3A%22status-nothing%22%20OR%20label%3A%22status-boots%22%20OR%20label%3A%22status-menus%22%20OR%20label%3A%22status-ingame%22)%20\">All Non-Playable Games for $los</a></p><br><hr><ul>";
+    <a href=\"index.html\">Back to Overview</a> - Total outdated issues for $os: $utc <span title=\"Count including playable titles\" class=\"grey\">($tc)</span> - <a href=\"https://github.com/shadps4-emu/shadps4-game-compatibility/issues?q=label%3A%22os-$os%22%20(label%3A%22status-nothing%22%20OR%20label%3A%22status-boots%22%20OR%20label%3A%22status-menus%22%20OR%20label%3A%22status-ingame%22)%20\">All Non-Playable Games for $os</a></p><br><hr><ul>";
 
         $html .= $thtml;
 
-    $html .= "</ul><hr><br><p><a href=\"index.html\">Back to Overview</a> - <a href=\"https://github.com/shadps4-emu/shadps4-game-compatibility/issues?q=label%3A%22os-$los%22%20(label%3A%22status-nothing%22%20OR%20label%3A%22status-boots%22%20OR%20label%3A%22status-menus%22%20OR%20label%3A%22status-ingame%22)%20\">All Non-Playable Games for $los</a><br><br><br></p></body></html>";
+    $html .= "</ul><hr><br><p><a href=\"index.html\">Back to Overview</a> - <a href=\"https://github.com/shadps4-emu/shadps4-game-compatibility/issues?q=label%3A%22os-$os%22%20(label%3A%22status-nothing%22%20OR%20label%3A%22status-boots%22%20OR%20label%3A%22status-menus%22%20OR%20label%3A%22status-ingame%22)%20\">All Non-Playable Games for $los</a><br><br><br></p></body></html>";
     //$html = str_replace("$unplayable_count ($tc)", "$unplayable_count <span title=\"Count including playable titles\">($tc)</span>", $html);
     return $html;
 }
